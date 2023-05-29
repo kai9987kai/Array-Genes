@@ -19,6 +19,9 @@ class Bot:
         self.health = health
         self.start_time = time.time()
         self.damage_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
+        self.speed_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
+        self.gender = random.choice(["Male", "Female"])
+        self.hostility = True
 
         # Create turtle for the bot
         self.turtle = turtle.Turtle()
@@ -61,6 +64,8 @@ class Bot:
                     num_reproduced_bots = int(self.weight)
                 for _ in range(num_reproduced_bots):
                     new_bot = Bot(len(bots), new_genetic_code, health=self.health)
+                    new_bot.speed_gene = self.speed_gene
+                    new_bot.gender = random.choice(["Male", "Female"])
                     bots.append(new_bot)
                     print(f"Bot {self.id} reproduced. New bot {new_bot.id} created.")
                     self.weight -= 1
@@ -79,9 +84,14 @@ class Bot:
             damage = self.genetic_code.count(self.damage_gene)
             bot.health -= damage
             print(f"Bot {self.id} dealt {damage} damage to Bot {bot.id}.")
+            if bot.health <= 0:
+                bot.alive = False
+                print(f"Bot {bot.id} killed by Bot {self.id}.")
+                self.hostility = False
 
     def move(self):
-        self.turtle.forward(2)
+        speed = (self.genetic_code.count(self.speed_gene) + 1) * 5  # Increase the distance moved
+        self.turtle.forward(speed)
 
     def rotate(self):
         angle = random.randint(-15, 15)
@@ -90,9 +100,24 @@ class Bot:
     def get_duration(self):
         return round(time.time() - self.start_time, 2)
 
+def create_box_colliders():
+    colliders = []
+    for _ in range(4):
+        collider = turtle.Turtle()
+        collider.shape("square")
+        collider.color("red")
+        collider.penup()
+        collider.speed(0)
+        collider.shapesize(stretch_wid=6, stretch_len=1)
+        collider.goto(random.randint(-360, 360), random.randint(-260, 260))
+        colliders.append(collider)
+    return colliders
+
 def main():
     # Initialize bots with random genetic codes
-    bots = [Bot(i, ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(10)])) for i in range(10)]
+    bots = [Bot(i, ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(10)])) for i in range(50)]  # Start with 50 bots
+
+    colliders = create_box_colliders()
 
     while True:
         for bot in bots:
@@ -100,30 +125,33 @@ def main():
             bot.rotate()
             bot.move()
 
+            # Check collision with colliders
+            for collider in colliders:
+                if bot.turtle.distance(collider) < 30:
+                    bot.turtle.right(180)
+
         for bot in bots:
             for other_bot in bots:
                 if bot.id != other_bot.id and bot.alive and other_bot.alive:
-                    bot.deal_damage(other_bot)
-                    if other_bot.health <= 0:
-                        bot.killed_count += 1
-                        other_bot.alive = False
-                        print(f"Bot {bot.id} killed Bot {other_bot.id}.")
+                    if bot.hostility and other_bot.hostility:
+                        bot.deal_damage(other_bot)
+                    elif not bot.hostility and not other_bot.hostility and bot.gender != other_bot.gender:
+                        bot.reproduce(bots)
 
         for bot in bots:
-            bot.reproduce(bots)
             bot.share_health(bots)
 
         # Sort bots by duration (longest living first)
         bots.sort(key=lambda bot: bot.get_duration(), reverse=True)
 
         # Kill the lower bots
-        for bot in bots[10:]:
+        for bot in bots[50:]:
             bot.alive = False
             print(f"Bot {bot.id} killed due to lower survival time.")
 
         print("\nCurrent Bot Status:")
         for bot in bots:
-            print(f"Bot {bot.id}: Genetic Code: {bot.genetic_code}, Duration: {bot.get_duration()} seconds, Weight: {bot.weight}, Health: {bot.health}/10")
+            print(f"Bot {bot.id}: Genetic Code: {bot.genetic_code}, Duration: {bot.get_duration()} seconds, Weight: {bot.weight}, Health: {bot.health}/10, Gender: {bot.gender}, Hostility: {bot.hostility}")
 
         time.sleep(1)
 

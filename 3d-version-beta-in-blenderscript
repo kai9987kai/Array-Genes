@@ -39,14 +39,16 @@ for color, location in zip(PLANT_COLORS, PLANT_LOCATIONS):
     plants.append(plant)
 
 class Bot:
-    def __init__(self, genetic_code, health=MAX_HEALTH):
+    def __init__(self, genetic_code=None, health=MAX_HEALTH):
+        if genetic_code is None:
+            genetic_code = {
+                'damage': random.uniform(0.1, 1.0),
+                'health': random.uniform(0.1, 1.0)
+            }
         self.genetic_code = genetic_code
         self.alive = True
         self.weight = 1
         self.health = health
-        self.damage_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
-        self.speed_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
-        self.feed_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
         self.gender = random.choice(["Male", "Female"])
         self.hostility = True
 
@@ -67,12 +69,10 @@ class Bot:
     def avoid_obstacles(self):
         for obstacle in obstacles:
             if self.distance_to_obstacle(obstacle) <= 0.2:
+
                 self.mesh.location.x -= 0.1
                 self.mesh.location.y -= 0.1
 
-    def distanceApologies for the abrupt cut-off. Here's the rest of the script:
-
-```python
     def distance_to_obstacle(self, obstacle):
         x1, y1, _ = self.mesh.location
         x2, y2, _ = obstacle.location
@@ -94,18 +94,29 @@ class Bot:
         return abs(x) > 10 or abs(y) > 10
 
     def reproduce(self):
-        if self.gender == "Male":
+        if self.gender == "Male" and not self.hostility:
             for bot in bots:
-                if bot.gender == "Female" and bot.alive:
-                    child_genetic_code = self.genetic_code + bot.genetic_code
+                if bot.gender == "Female" and bot.alive and not bot.hostility:
+                    child_genetic_code = {
+                        'damage': (self.genetic_code['damage'] + bot.genetic_code['damage']) / 2,
+                        'health': (self.genetic_code['health'] + bot.genetic_code['health']) / 2
+                    }
                     child = Bot(child_genetic_code)
                     bots.append(child)
                     break
 
+    def attack(self, other_bot):
+        if self.hostility and other_bot.alive:
+            other_bot.health -= self.genetic_code['damage']
+            if other_bot.health <= 0:
+                other_bot.alive = False
+                other_bot.mesh.hide_viewport = True
+                self.hostility = False
+
 # Create initial bots
 bots = []
-for _ in range(23):
-    bot = Bot([])
+for _ in range(5):
+    bot = Bot()
     bots.append(bot)
 
 last_bot_spawn_time = 0
@@ -121,11 +132,14 @@ def move_bots():
             bot.move()
             bot.avoid_obstacles()
             bot.avoid_bots()
+            for other_bot in bots:
+                if other_bot != bot:
+                    bot.attack(other_bot)
             bot.reproduce()
 
     # Spawn a new bot every BOT_SPAWN_INTERVAL seconds
     if current_time - last_bot_spawn_time >= BOT_SPAWN_INTERVAL:
-        new_bot = Bot([])
+        new_bot = Bot()
         bots.append(new_bot)
         last_bot_spawn_time = current_time
 

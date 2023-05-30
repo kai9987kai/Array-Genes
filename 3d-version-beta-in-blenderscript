@@ -1,0 +1,135 @@
+import bpy
+import random
+import time
+
+# Define global constants
+MAX_HEALTH = 10
+MUTATION_RATE = 0.01
+CROSSOVER_RATE = 0.8
+FERTILITY_RATE_INCREASE = 0.05
+BOT_SPAWN_INTERVAL = 1.0  # In seconds
+
+# Create obstacle colors, sizes, and locations
+OBSTACLE_COLORS = [(0, 0, 1, 1), (1, 0.5, 0, 1), (0.5, 0, 0.5, 1)]  # Blue, orange, purple
+OBSTACLE_SIZES = [1, 1.5, 2]
+OBSTACLE_LOCATIONS = [(random.uniform(-10, 10), random.uniform(-10, 10), 0) for _ in range(10)]
+
+# Create plant colors and locations
+PLANT_COLORS = [(0, 1, 0, 1), (0, 0.5, 0, 1), (0.5, 1, 0.5, 1)]  # Green, dark green, lime green
+PLANT_LOCATIONS = [(random.uniform(-10, 10), random.uniform(-10, 10), 0) for _ in range(10)]
+
+# Create obstacles
+obstacles = []
+for color, size, location in zip(OBSTACLE_COLORS, OBSTACLE_SIZES, OBSTACLE_LOCATIONS):
+    bpy.ops.mesh.primitive_cube_add(size=size, location=location)
+    obstacle = bpy.context.object
+    material = bpy.data.materials.new(name="ObstacleMaterial")
+    material.diffuse_color = color
+    obstacle.data.materials.append(material)
+    obstacles.append(obstacle)
+
+# Create plants
+plants = []
+for color, location in zip(PLANT_COLORS, PLANT_LOCATIONS):
+    bpy.ops.mesh.primitive_uv_sphere_add(location=location)
+    plant = bpy.context.object
+    material = bpy.data.materials.new(name="PlantMaterial")
+    material.diffuse_color = color
+    plant.data.materials.append(material)
+    plants.append(plant)
+
+class Bot:
+    def __init__(self, genetic_code, health=MAX_HEALTH):
+        self.genetic_code = genetic_code
+        self.alive = True
+        self.weight = 1
+        self.health = health
+        self.damage_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
+        self.speed_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
+        self.feed_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
+        self.gender = random.choice(["Male", "Female"])
+        self.hostility = True
+
+        # Create mesh for the bot
+        bpy.ops.mesh.primitive_cube_add(location=(random.uniform(-10, 10), random.uniform(-10, 10), 0))
+        self.mesh = bpy.context.object
+        material = bpy.data.materials.new(name="BotMaterial")
+        if self.gender == "Male":
+            material.diffuse_color = (1, 0, 0, 1)  # Red
+        else:
+            material.diffuse_color = (1, 0.5, 0.5, 1)  # Pink
+        self.mesh.data.materials.append(material)
+
+    def move(self):
+        self.mesh.location.x += 0.02
+        self.mesh.location.y += 0.02
+
+    def avoid_obstacles(self):
+        for obstacle in obstacles:
+            if self.distance_to_obstacle(obstacle) <= 0.2:
+                self.mesh.location.x -= 0.1
+                self.mesh.location.y -= 0.1
+
+    def distanceApologies for the abrupt cut-off. Here's the rest of the script:
+
+```python
+    def distance_to_obstacle(self, obstacle):
+        x1, y1, _ = self.mesh.location
+        x2, y2, _ = obstacle.location
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+    def avoid_bots(self):
+        for other_bot in bots:
+            if other_bot != self and self.distance_to_bot(other_bot) <= 0.2:
+                self.mesh.location.x -= 0.1
+                self.mesh.location.y -= 0.1
+
+    def distance_to_bot(self, other_bot):
+        x1, y1, _ = self.mesh.location
+        x2, y2, _ = other_bot.mesh.location
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+
+    def is_outside_window(self):
+        x, y, _ = self.mesh.location
+        return abs(x) > 10 or abs(y) > 10
+
+    def reproduce(self):
+        if self.gender == "Male":
+            for bot in bots:
+                if bot.gender == "Female" and bot.alive:
+                    child_genetic_code = self.genetic_code + bot.genetic_code
+                    child = Bot(child_genetic_code)
+                    bots.append(child)
+                    break
+
+# Create initial bots
+bots = []
+for _ in range(23):
+    bot = Bot([])
+    bots.append(bot)
+
+last_bot_spawn_time = 0
+
+def move_bots():
+    global last_bot_spawn_time
+
+    current_time = time.time()
+
+    # Move and update health for existing bots
+    for bot in bots:
+        if bot.alive:
+            bot.move()
+            bot.avoid_obstacles()
+            bot.avoid_bots()
+            bot.reproduce()
+
+    # Spawn a new bot every BOT_SPAWN_INTERVAL seconds
+    if current_time - last_bot_spawn_time >= BOT_SPAWN_INTERVAL:
+        new_bot = Bot([])
+        bots.append(new_bot)
+        last_bot_spawn_time = current_time
+
+    return BOT_SPAWN_INTERVAL
+
+# Start the simulation
+bpy.app.timers.register(move_bots)

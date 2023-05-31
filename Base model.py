@@ -1,147 +1,113 @@
-import random
 import turtle
-import time
-import datetime
-import statistics
+import random
 
-# Initialize turtle screen
+# Screen setup
 screen = turtle.Screen()
 screen.setup(800, 600)
-screen.title("Bot Simulation")
 
-# Define global constants
-MAX_HEALTH = 10
-MUTATION_RATE = 0.01
-CROSSOVER_RATE = 0.8
+# List of bots
+bots = []
 
-class Bot:
-    def __init__(self, id, genetic_code, health=MAX_HEALTH):
-        self.id = id
+# List of plants
+plants = []
+
+# List of obstacles
+obstacles = []
+
+# Genetic attributes
+GENETIC_ATTRIBUTES = {
+    "speed": {
+        "A": 1.0,
+        "B": 0.8,
+        "C": 0.5,
+        "D": 0.3,
+        "E": 0.1
+    }
+}
+
+# Bot class
+class Bot(turtle.Turtle):
+    def __init__(self, x, y, color, genetic_code):
+        super().__init__()
+        self.penup()
+        self.goto(x, y)
+        self.color(color)
+        self.shape('circle')
+        self.speed(1)
+        self.moves = 0
         self.genetic_code = genetic_code
-        self.alive = True
-        self.weight = 1
-        self.health = health
-        self.start_time = time.time()
-        self.damage_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
-        self.speed_gene = random.choice('abcdefghijklmnopqrstuvwxyz')
-        self.gender = random.choice(["Male", "Female"])
-        self.hostility = True
-
-        # Create turtle for the bot
-        self.turtle = turtle.Turtle()
-        self.turtle.shape("circle")
-        if self.gender == "Male":
-            self.turtle.color("red")
-        else:
-            self.turtle.color("pink")
-        self.turtle.penup()
-
-        # Set initial position on the canvas
-        x = random.randint(-380, 380)
-        y = random.randint(-280, 280)
-        self.turtle.goto(x, y)
-
-        # Set initial heading
-        self.turtle.setheading(random.randint(0, 359))
-
-    def random_genes(self):
-        return ''.join([random.choice('abcdefghijklmnopqrstuvwxyz') for _ in range(len(self.genetic_code))])
-
-    def inherited_genes(self):
-        return random.choice('abcdefghijklmnopqrstuvwxyz')
-
-    def time_genes(self):
-        current_time = datetime.datetime.now()
-        return f"{current_time.minute % 100:02d}{current_time.second % 100:02d}"
-
-    def check_genetic_code(self):
-        pass
-
-    def rotate(self):
-        angle = random.randint(-10, 10)
-        self.turtle.right(angle)
+        self.speed_gene = GENETIC_ATTRIBUTES["speed"][self.genetic_code[0]]
 
     def move(self):
-        self.turtle.forward(2)
-
-    def find_visible_bots(self, radius):
-        visible_bots = []
-        for bot in bots:
-            if bot != self and self.turtle.distance(bot.turtle) <= radius:
-                visible_bots.append(bot)
-        return visible_bots
-
-    def move_towards_bots(self, visible_bots):
-        opposite_gender_bots = [bot for bot in visible_bots if bot.gender != self.gender and bot.alive]
-        if opposite_gender_bots:
-            closest_bot = min(opposite_gender_bots, key=lambda bot: self.turtle.distance(bot.turtle))
-            self.turtle.setheading(self.turtle.towards(closest_bot.turtle))
-
-    def avoid_hostile_bots(self, visible_bots):
-        hostile_bots = [bot for bot in visible_bots if bot.hostility and bot.alive]
-        if hostile_bots:
-            closest_bot = min(hostile_bots, key=lambda bot: self.turtle.distance(bot.turtle))
-            self.turtle.setheading(self.turtle.towards(closest_bot.turtle) + 180)
-
-    def update_health(self):
-        elapsed_time = time.time() - self.start_time
-        if elapsed_time >= 10:
-            self.health -= 1
-            self.start_time = time.time()
-
-        if self.health <= 0:
-            self.alive = False
-            self.turtle.clear()
-
-    def apply_environmental_factors(self):
-        pass
+        self.forward(10 * self.speed_gene)
+        self.moves += 1
+        if self.moves == 4:
+            self.reproduce()
+            self.moves = 0
 
     def reproduce(self):
-        if self.health >= 7 and random.random() <= 0.12:
-            child_genetic_code = self.genetic_code + self.inherited_genes()
-            child_genetic_code = ''.join(random.choices(child_genetic_code, k=len(self.genetic_code)))
-            child = Bot(len(bots), child_genetic_code, health=self.health / 2)
-            child.turtle.goto(self.turtle.position())
-            child.turtle.setheading(self.turtle.heading())
-            if self.gender == "Male":
-                child.turtle.color("red")
-            else:
-                child.turtle.color("pink")
-            bots.append(child)
+        x, y = self.position()
+        child_genetic_code = self.genetic_code + random.choice('ABCDE')
+        child = Bot(x, y, self.color()[0], child_genetic_code)
+        bots.append(child)
 
-    def run(self):
-        while self.alive:
-            self.check_genetic_code()
-            self.rotate()
-            self.move()
+    def eat(self, plant):
+        if self.distance(plant) < 20:
+            plants.remove(plant)
+            plant.hideturtle()
+            del plant
+            self.moves = 0
 
-            # Look for bots within a certain radius
-            visible_bots = self.find_visible_bots(100)
+# Plant class
+class Plant(turtle.Turtle):
+    def __init__(self, x, y):
+        super().__init__()
+        self.penup()
+        self.goto(x, y)
+        self.color('green')
+        self.shape('circle')
 
-            # Move towards bots of opposite gender or non-hostile bots
-            self.move_towards_bots(visible_bots)
+# Obstacle class
+class Obstacle(turtle.Turtle):
+    def __init__(self, x, y):
+        super().__init__()
+        self.penup()
+        self.goto(x, y)
+        self.color('black')
+        self.shape('square')
 
-            # Avoid hostile bots
-            self.avoid_hostile_bots(visible_bots)
-
-            # Update health and apply environmental factors
-            self.update_health()
-            self.apply_environmental_factors()
-
-            self.reproduce()
-
-            time.sleep(0.005)  # Update every 5 milliseconds
-
-
-# Create initial population of bots
-bots = []
-for i in range(10):
-    genetic_code = "abcdefghijklmnopqrstuvwxyz"
-    bot = Bot(i, genetic_code)
+# Create initial bots
+for _ in range(10):
+    x = random.randint(-300, 300)
+    y = random.randint(-200, 200)
+    color = random.choice(['blue', 'pink'])
+    genetic_code = random.choice('ABCDE')
+    bot = Bot(x, y, color, genetic_code)
     bots.append(bot)
 
-# Start the simulation
-for bot in bots:
-    bot.run()
+# Create initial plants
+for _ in range(20):
+    x = random.randint(-300, 300)
+    y = random.randint(-200, 200)
+    plant = Plant(x, y)
+    plants.append(plant)
+
+# Create initial obstacles
+for _ in range(5):
+    x = random.randint(-300, 300)
+    y = random.randint(-200, 200)
+    obstacle = Obstacle(x, y)
+    obstacles.append(obstacle)
+
+# Main loop
+while True:
+    for bot in bots:
+        bot.right(random.randint(-90, 90))
+        bot.move()
+        for plant in plants:
+            bot.eat(plant)
+  
+        if bot.xcor() > 390 or bot.xcor() < -390 or bot.ycor() > 290 or bot.ycor() < -290:
+            bot.right(180)
 
 turtle.done()

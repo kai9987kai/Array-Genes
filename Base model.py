@@ -77,6 +77,9 @@ class Bot(turtle.Turtle):
                 del other
                 self.hostility = False
 
+    def display_stats(self):
+        print(f"Bot ID: {self}, Genetic Code: {self.genetic_code}, Speed: {self.speed_gene}, Hostility: {self.hostility}, Age: {self.age}")
+
 # Plant class
 class Plant(turtle.Turtle):
     def __init__(self, x, y):
@@ -107,6 +110,7 @@ for _ in range(10):
 # Create initial plants
 for _ in range(20):
     x = random.randint(-300, 300)
+
     y = random.randint(-200, 200)
     plant = Plant(x, y)
     plants.append(plant)
@@ -114,7 +118,6 @@ for _ in range(20):
 # Create initial obstacles
 for _ in range(5):
     x = random.randint(-300, 300)
-  
     y = random.randint(-200, 200)
     obstacle = Obstacle(x, y)
     obstacles.append(obstacle)
@@ -135,5 +138,6 @@ while True:
             bots.remove(bot)
             bot.hideturtle()
             del bot
+        bot.display_stats()  # Display bot's stats
 
 turtle.done()
